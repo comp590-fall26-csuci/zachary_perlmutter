@@ -1,7 +1,6 @@
-def fib(n):
-    a,b=0,1
-    for _ in range(n):
+def fib(n,a=0,b=1):
+    if n > 0:
         yield a
-        a,b=b,a+b
+        yield from fib(n-1,b,a+b)
 
 print(*fib(25),file=open("output/lab1.txt","w"))
