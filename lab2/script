@@ -1,0 +1,17 @@
+#!/bin/bash
+
+cd "$(dirname $0)" # consistent pathing
+
+# print every line sorted
+sort passwords.txt
+
+# clear directory on rerun
+rm -f passwords && mkdir passwords
+
+# write every password in original order to passwords
+i=0
+cat passwords.txt | while read pass
+do
+	echo $pass > "passwords/$(((i++))).txt"
+done
+
