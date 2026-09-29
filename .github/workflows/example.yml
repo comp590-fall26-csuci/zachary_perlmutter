@@ -14,6 +14,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: build
-      run: gcc -o fib -Iheaders -lmath fibonacci.c main.c
+      run: gcc -o fib -Iheaders -lm fibonacci.c main.c
     - name: run
       run: ./fib
