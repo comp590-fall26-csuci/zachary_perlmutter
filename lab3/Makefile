@@ -7,5 +7,8 @@ main: fib.o
 fib.o:
 	cc -c $(DIR)/fibonacci.c -I$(DIR)/headers -o fib.o
 
+test_output: main
+	diff <(./main) scripts/expected.txt
+
 clean:
 	rm -f fib.o main
