@@ -4,6 +4,3 @@
 [submodule "lab3/cloudcmd"]
 	path = lab3/cloudcmd
 	url = https://github.com/coderaiser/cloudcmd
-[submodule "lab3/590MakefileLab"]
-	path = lab3/590MakefileLab
-	url = https://github.com/rz447csuci/590MakefileLab/
