@@ -1,0 +1,22 @@
+name: Lab 4
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./lab3
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: make
+      run: make
+    - name: verify-output
+      run: ./scripts/verify_script
