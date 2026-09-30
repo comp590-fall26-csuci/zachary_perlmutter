@@ -2,7 +2,7 @@
 #include "fibonacci.h"
 
 int main(void) {
-    int term = 10;
+    int term //  = 10; // break everything here 
     printf("The %dth Fibonacci number is %d\n", term, fibonacci(term));
     printf("The theoretical Golden Ratio is %f\n", golden_ratio_approx(term));
     return 0;
