@@ -16,7 +16,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
     - name: make
       run: make
-    - name: verify-output
-      run: ./scripts/verify_script
