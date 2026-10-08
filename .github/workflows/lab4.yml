@@ -20,3 +20,12 @@ jobs:
         submodules: true
     - name: make
       run: make
+  semgrep:
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: true
+      - run: semgrep scan --config auto 
