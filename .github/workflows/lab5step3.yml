@@ -1,0 +1,37 @@
+name: Lab5Step3
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    container:
+      image: aflplusplus/aflplusplus
+    defaults:
+      run:
+        working-directory: ./lab3/590MakefileLab
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build dvcp.c with AFL instrumentation
+        run: afl-clang-fast -o dvcp dvcp.c
+
+      - name: Fuzz dvcp.c for three minutes
+        run: |
+          mkdir -p findings seeds
+          printf '\0' > seeds/seed
+          afl-fuzz -V 180 -i seeds -o findings -- ./dvcp @@
+
+      - name: Print Findings
+        run: find findings -type f -printf '%p:\n' -exec cat {} \; -exec echo {} \;
+
+      - name: Archive Findings
+        run: tar -czf findings.tar.gz findings
+
+      - name: Upload findings
+        uses: actions/upload-artifact@v4
+        with:
+          name: afl-findings-dvcp
+          path: lab3/590MakefileLab/findings.tar.gz
