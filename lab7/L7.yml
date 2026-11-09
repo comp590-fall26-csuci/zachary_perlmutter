@@ -6,6 +6,7 @@
     gitea_db_user: git
     gitea_db_name: gitea
     gitea_db_pass: secure_password  # I'm assuming this doesn't actually need to be secure for this lab
+    gitea_source: https://dl.gitea.com/
   tasks:
     ## database setup
     - name: Install Postgres
@@ -53,26 +54,28 @@
         shell: /bin/bash
         system: true
         comment: Git Version Control
-    - name: create /var/lib entry 
+    - name: create file structure
+      vars:
+        lib: /var/lib/gitea 
       file:
-        path: /var/lib/gitea/{custom,data,log}
-        owner: git
+        path: "{{ item.path }}"
+        owner: "{{ item.owner | default('git') }}"
         group: git
-        mode: 770
+        recurse: true
+        mode: "{{ item.mode | default('750') }}"
         state: directory
-    - name: create /etc entry
-      file:
-        path: /etc/gitea
-        owner: root
-        group: git
-        mode: 770
-        state: directory
+      loop:
+        - { path: "{{lib}}" }
+        - { path: "{{lib}}/custom" }
+        - { path: "{{lib}}/data" }
+        - { path: "{{lib}}/log" }
+        - { path: /etc/gitea, owner: root, mode: '770' }
     - name: download gitea executable
       get_url:
         # as a note, this implementation would need additional handlers to handle updates
-        url: "https://dl.gitea.com/gitea/{{gitea_version}}/gitea-{{gitea_version}}-linux-amd64"
+        url: "{{gitea_source}}/gitea/{{gitea_version}}/gitea-{{gitea_version}}-linux-amd64"
         dest: /usr/local/bin/gitea
-        mode: u+x
+        mode: +x
     - name: generate completion
       command: gitea completion bash
     ## service setup
@@ -99,4 +102,3 @@
         state: restarted
         enabled: true
         daemon_reload: true
-
