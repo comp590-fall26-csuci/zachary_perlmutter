@@ -55,6 +55,7 @@
         shell: /bin/bash
         system: true
         comment: Git Version Control
+        home: /var/lib/gitea
     - name: create file structure
       vars:
         lib: /var/lib/gitea
