@@ -1,0 +1,101 @@
+- name: Runner
+  hosts: target
+  become: true
+  vars:
+    arch: linux-amd64
+    
+    gitea_source: https://dl.gitea.com
+    gitea_instance: http://localhost:3000
+    gitea_user: git
+
+    runner_version: 5.4.1
+    runner_bin: gitea-runner
+    runner_bin_path: /usr/local/bin/{{runner_bin}}"
+    runner_user: "{{runner_bin}}"
+    runner_etc: /etc/{{runner_bin}}/
+    runner_config: "{{runner_etc}}config.yaml"
+    runner_home: /var/lib/{{runner_user}}
+    runner_name: gitea_runner
+    runner_file: "{{runner_home}}/.runner"
+  tasks:
+    - name: install gitea runner
+      vars:
+        source: "{{gitea_source}}/{{runner_bin}}/{{runner_version}}/{{runner_bin}}-{{runner_version}}-{{arch}}"
+      get_url:
+        dest: "{{runner_bin_path}}"
+        url: "{{source}}"
+        checksum: "sha256:{{source}}.sha256" 
+        mode: '0755'
+      notify: restart runner
+    - name: create runner user
+      user:
+        name: "{{runner_user}}"
+        home: "{{runner_home}}"
+        system: true
+    - name: create /etc
+      file:
+        path: "{{runner_etc}}"
+        owner: "{{runner_user}}"
+        state: directory
+    - name: initialize runner config
+      command:
+        cmd: "{{runner_bin}} config init -c {{runner_config}}"
+        creates: "{{runner_config}}"
+    - name: set config properties
+      file:
+        path: "{{runner_config}}"
+        owner: "{{runner_user}}"
+    - name: generate runner token
+      register: runner_token
+      # todo replace with variable
+      command:
+        cmd: gitea --config /etc/gitea/app.ini actions generate-runner-token
+        creates: "{{runner_file}}"
+      become_user: "{{gitea_user}}"
+
+    - name: create runner
+      become_user: "{{runner_user}}"
+      command: 
+        argv:
+          - "{{runner_bin}}"
+          - register
+          - --no-interactive
+          - --instance
+          - "{{gitea_instance}}"
+          - --token
+          - "{{runner_token.stdout}}"
+          - --name
+          - "{{runner_name}}"
+        creates: "{{runner_file}}"
+        chdir: "{{runner_home}}"
+    - name: Create gitea runner service
+      notify: restart runner
+      copy:
+        dest: /etc/systemd/system/{{runner_bin}}.service
+        content: |
+          [Unit]
+          Description=Gitea Actions runner
+          Documentation=https://gitea.com/gitea/runner
+          After=network-online.target
+          Wants=network-online.target
+          [Service]
+          Type=simple
+          ExecStart={{runner_bin_path}} daemon --config {{runner_config}}
+          WorkingDirectory={{runner_home}}
+          User={{gitea_user}}
+          Group={{gitea_user}}
+          Restart=on-failure
+          RestartSec=5s
+          TimeoutStopSec=3h
+          [Install]
+          WantedBy=multi-user.target
+    - name: set runner timeout
+      command: "{{runner_bin}} config set -c {{runner_config}} runner.shutdown_timeout 2h50m"
+      become_user: "{{runner_user}}"
+  handlers:
+    - name: restart runner
+      systemd:
+        name: "{{runner_bin}}"
+        state: restarted
+        enabled: true
+        daemon_reload: true

@@ -127,8 +127,7 @@
           PASSWD  = {{gitea_db_pass}}
 
           [oauth2]
-          JWT_SECRET_URI = file:/etc/gitea/JWT_SECRET
-
+          JWT_SECRET_URI = file:/etc/gitea/JWT_SECRET 
 
   handlers:
     - name: restart gitea
@@ -137,3 +136,6 @@
         state: restarted
         enabled: true
         daemon_reload: true
+
+- name: set up runner
+  import_playbook: runner.yml
