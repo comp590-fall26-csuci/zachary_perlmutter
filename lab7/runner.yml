@@ -80,10 +80,10 @@
           Wants=network-online.target
           [Service]
           Type=simple
-          ExecStart={{runner_bin_path}} daemon --config {{runner_config}}
+          ExecStart=gitea-runner daemon --config {{runner_config}}
           WorkingDirectory={{runner_home}}
-          User={{gitea_user}}
-          Group={{gitea_user}}
+          User={{runner_user}}
+          Group={{runner_user}}
           Restart=on-failure
           RestartSec=5s
           TimeoutStopSec=3h
