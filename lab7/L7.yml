@@ -7,6 +7,7 @@
     gitea_db_name: gitea
     gitea_db_pass: secure_password  # I'm assuming this doesn't actually need to be secure for this lab
     gitea_source: https://dl.gitea.com/
+    gitea_secret_names: [SECRET_KEY, INTERNAL_TOKEN, JWT_SECRET]
   tasks:
     ## database setup
     - name: Install Postgres
@@ -56,28 +57,26 @@
         comment: Git Version Control
     - name: create file structure
       vars:
-        lib: /var/lib/gitea 
+        lib: /var/lib/gitea
       file:
         path: "{{ item.path }}"
         owner: "{{ item.owner | default('git') }}"
-        group: git
-        recurse: true
-        mode: "{{ item.mode | default('750') }}"
+        group: git 
+        mode: '750'
         state: directory
       loop:
         - { path: "{{lib}}" }
         - { path: "{{lib}}/custom" }
         - { path: "{{lib}}/data" }
         - { path: "{{lib}}/log" }
-        - { path: /etc/gitea, owner: root, mode: '770' }
+        - { path: /etc/gitea, owner: root }
     - name: download gitea executable
       get_url:
         # as a note, this implementation would need additional handlers to handle updates
         url: "{{gitea_source}}/gitea/{{gitea_version}}/gitea-{{gitea_version}}-linux-amd64"
         dest: /usr/local/bin/gitea
         mode: +x
-    - name: generate completion
-      command: gitea completion bash
+    
     ## service setup
     - name: create service file
       notify: restart gitea
@@ -87,7 +86,7 @@
         dest: /etc/systemd/system/gitea.service
         owner: root
         group: root
-        mode: 644
+        mode: '644'
         # retrieve service file and replace with dependencies. the lookup retrieves the url
         # as a note this doesn't currently use redis
         content: |-
@@ -95,6 +94,42 @@
             lookup('ansible.builtin.url', service_url, split_lines=False) |
             regex_replace('^#((?:Wants|After)=(?:postgresql)\.service)$', '\1')
           }}
+    
+    ## secrets
+    - name: generate secrets
+      shell: gitea generate secret {{ item }} > {{ item }}
+      args:
+        chdir: /etc/gitea
+        creates: "{{ item }}"
+      loop: "{{ gitea_secret_names }}"
+    - name: secure secrets
+      file:
+        path: /etc/gitea/{{item}}
+        mode: '640'
+      loop: "{{gitea_secret_names}}"
+    
+    ## config
+    - name: create app.ini
+      notify: restart gitea
+      copy:
+        dest: /etc/gitea/app.ini
+        mode: '640'
+        content: |-
+          [security]
+          INSTALL_LOCK     = true
+          SECRET_KEY_URI   = file:/etc/gitea/SECRET_KEY
+          INTERNAL_TOKEN_URI = file:/etc/gitea/INTERNAL_TOKEN
+
+          [database]
+          DB_TYPE = postgres
+          NAME    = {{gitea_db_name}}
+          USER    = {{gitea_db_user}}
+          PASSWD  = {{gitea_db_pass}}
+
+          [oauth2]
+          JWT_SECRET_URI = file:/etc/gitea/JWT_SECRET
+
+
   handlers:
     - name: restart gitea
       systemd:
