@@ -46,6 +46,7 @@
       file:
         path: "{{runner_config}}"
         owner: "{{runner_user}}"
+      # as a note I'm not sure why this always runs...
     - name: generate runner token
       register: runner_token
       command:
@@ -67,8 +68,15 @@
           - "{{runner_token.stdout}}"
           - --name
           - "{{runner_name}}"
+          - --labels
+          - ubuntu-latest 
         creates: "{{runner_file}}"
         chdir: "{{runner_home}}"
+    - name: ensure node is installed 
+      apt:
+        name: nodejs
+        state: present
+        update-cache: true
     - name: Create gitea runner service
       notify: restart runner
       copy:
