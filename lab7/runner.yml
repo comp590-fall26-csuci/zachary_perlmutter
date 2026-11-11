@@ -10,13 +10,14 @@
 
     runner_version: 5.4.1
     runner_bin: gitea-runner
-    runner_bin_path: /usr/local/bin/{{runner_bin}}"
+    runner_bin_path: /usr/local/bin/{{runner_bin}}
     runner_user: "{{runner_bin}}"
-    runner_etc: /etc/{{runner_bin}}/
-    runner_config: "{{runner_etc}}config.yaml"
+    runner_etc: /etc/{{runner_bin}}
+    runner_config: "{{runner_etc}}/config.yaml"
     runner_home: /var/lib/{{runner_user}}
     runner_name: gitea_runner
     runner_file: "{{runner_home}}/.runner"
+  
   tasks:
     - name: install gitea runner
       vars:
@@ -47,7 +48,6 @@
         owner: "{{runner_user}}"
     - name: generate runner token
       register: runner_token
-      # todo replace with variable
       command:
         cmd: gitea --config /etc/gitea/app.ini actions generate-runner-token
         creates: "{{runner_file}}"
@@ -55,6 +55,7 @@
 
     - name: create runner
       become_user: "{{runner_user}}"
+      notify: restart runner
       command: 
         argv:
           - "{{runner_bin}}"
@@ -80,7 +81,7 @@
           Wants=network-online.target
           [Service]
           Type=simple
-          ExecStart=gitea-runner daemon --config {{runner_config}}
+          ExecStart={{runner_bin}} daemon --config {{runner_config}}
           WorkingDirectory={{runner_home}}
           User={{runner_user}}
           Group={{runner_user}}
@@ -90,7 +91,10 @@
           [Install]
           WantedBy=multi-user.target
     - name: set runner timeout
-      command: "{{runner_bin}} config set -c {{runner_config}} runner.shutdown_timeout 2h50m"
+      notify: restart runner
+      command:
+        cmd: "{{runner_bin}} config set -c {{runner_config}} runner.shutdown_timeout 2h50m"
+        creates: "{{runner_config}}"
       become_user: "{{runner_user}}"
   handlers:
     - name: restart runner
