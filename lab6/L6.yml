@@ -1,0 +1,25 @@
+- name: Lab 6
+  hosts: target
+  become: true
+
+  tasks:
+    - name: install asciinema
+      apt:
+        name: asciinema
+        state: present
+        update_cache: yes
+    - name: install apache2
+      apt:
+        name: apache2
+        state: present
+        update_cache: yes
+    - name: enable apache2 service
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+  post_tasks:
+    - name: mark complete
+      debug:
+        msg: "Deployment finished on {{ inventory_hostname }}"
+
