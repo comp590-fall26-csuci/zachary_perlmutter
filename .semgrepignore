@@ -1,0 +1,13 @@
+# submodules
+
+lab3/pychess/
+lab3/cloudcmd/
+lab3/utest.h/
+
+# non-code directories
+lab3/venv/
+output/
+
+# artifacts
+*.cast
+*.png
